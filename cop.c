@@ -1,6 +1,6 @@
 /**********************************************************************
-* File: 1822test.c                                                    *
-* Date: 02/06/2016                                                    *
+* File: cop.c                                                         *
+* Date: 02/23/2016                                                    *
 * File Version: 1                                                     *
 *                                                                     *
 * Author: M10                                                         *
@@ -12,9 +12,9 @@
 *              PIC12F1822 pinout for this project                     *
 *              ----------                                             *
 * 3.3-5V-- Vdd |1  U   8| GND                                         *
-*          GP5 |2      7| GP0 --> IR LED output                       *
-*          GP4 |3      6| GP1 <-- Button 1 input --> GND              *
-*          GP3 |4      5| GP2 <-- Button 2 input --> GND              *
+* blue <-- GP5 |2      7| GP0 --> red                                 *
+*  red <-- GP4 |3      6| GP1 --> blue                                *
+*          GP3 |4      5| GP2                                         *
 *              ----------                                             *
 *                                                                     *
 **********************************************************************/
@@ -46,20 +46,101 @@
 #pragma config LVP = OFF        // Low-Voltage Programming Enable (OFF	High-voltage on MCLR/VPP must be used for programming)
 
 void main(void) {
-    unsigned char portValue;    // always use a variable to hold the value you want the port to assume
+    unsigned char portValue;
 
     // Port A access
-    ANSELA = 0x0;               // set to digital I/O (not analog)
-    TRISA = 0x0;                // set all port bits to be output
+    ANSELA = 0x0;   // set to digital I/O (not analog)
+    TRISA = 0x0;    // set all port bits to be output
 
+    portValue = 0b00110111; // all led off
     while(1) {
-        portValue = 0b00110111; // RA[0:5] except RA[3]
-        LATA = portValue;       // write to port latch
-        _delay(50000);          // compiler built-in function - see XC8 Compiler User's Guide
-        portValue = 0b00000000;
+        //portValue = 0b00100110; // ra 4, 0 red
+        //portValue = 0b00010101; // ra 5, 1 blue
+        //125000cyc = 1.0sec
+
+        portValue = 0b00100110; // ra 4, 0 red
         LATA = portValue;
-        _delay(50000);          // instruction cycles - (50000/125000) sec for 500kHz clock
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        portValue = 0b00100110; // ra 4, 0 red
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
+
+        portValue = 0b00010101; // ra 5, 1 blue
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        portValue = 0b00010101; // ra 5, 1 blue
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
+
+        portValue = 0b00100110; // ra 4, 0 red
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        portValue = 0b00100110; // ra 4, 0 red
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
+
+        portValue = 0b00010101; // ra 5, 1 blue
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        portValue = 0b00010101; // ra 5, 1 blue
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
+
+        portValue = 0b00100110; // ra 4, 0 red
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
+
+        portValue = 0b00010101; // ra 5, 1 blue
+        LATA = portValue;
+        _delay(5000);
+        portValue = 0b00110111; // all led off
+        LATA = portValue;   // write to port latch - RA[0:5] except RA[3]
+        _delay(10625);      // delay value change - instruction cycles
+
+        _delay(15625);      // delay value change - instruction cycles
     }
-    return;                     // we should never reach this
+
+    return;                    // we should never reach this
     // jumps back to reset vector
 }
