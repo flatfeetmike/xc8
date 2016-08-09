@@ -1,7 +1,7 @@
 /**********************************************************************
 * File: txtest.c                                                      *
 * Date: 08/09/2016                                                    *
-* File Version: 2                                                     *
+* File Version: 3                                                     *
 *                                                                     *
 * Author: M10                                                         *
 * Company:                                                            *
@@ -50,25 +50,40 @@
 
 void main(void) {
     unsigned char portValue;    // always use a variable to hold the value you want the port to assume
+    int i;
 
     // set up oscillator control register
     OSCCONbits.SPLLEN = 0;      // PLL is disabled (POR default)
     OSCCONbits.IRCF   = 0b1110; // set OSCCON IRCF bits to select OSC frequency = 8 MHz HF
     OSCCONbits.SCS    = 0b10;   // select internal oscillator block regardless of FOSC
 
-    // Port A access
+    // port A access
     ANSELA = 0;                 // set to digital I/O (not analog)
     TRISA = 0;                  // set all port bits to be output (except ra3)
     PORTA = 0;                  // initialize the port
 
-    while(1) {
-        portValue = 0b00110111; // RA[0:5] except RA[3]
-        LATA = portValue;       // write to port latch
-        __delay_ms(100);
+    // select alternative pin function
+    RXDTSEL = 1;                // select RA5 as rx port
+    TXCKSEL = 1;                // select RA4 as tx port
 
-        portValue = 0b00000000;
-        LATA = portValue;
-        __delay_ms(900);
+    // setup serial port (8bit, no parity)
+    RCSTA = 0b10010000;         // (*SPEN RX9  SREN *CREN  ADEN   FERR OERR RX9D)
+    TXSTA = 0b00100100;         // ( CSRC TX9 *TXEN  SYNC  SENDB *BRGH TRMT TX9D)
+    // set baudrate to 9600 bps
+    SPBRG = 51;                 // 9615 actual (0.16% error) 
+
+    __delay_ms(1000);
+    i = 0x30;
+
+    while(1) {
+        while(TXIF == 0);       // block until tx buffer clears
+        TXREG = i;              // send the octet
+        
+        i++;
+        if(i > 0x7b) {
+            i = 0x30;
+        }
+        __delay_ms(100);
     }
     return;                     // we should never reach this
     // jumps back to reset vector
