@@ -1,24 +1,24 @@
 /**********************************************************************
 * File: txtest.c                                                      *
 * Date: 08/09/2016                                                    *
-* File Version: 1                                                     *
+* File Version: 2                                                     *
 *                                                                     *
 * Author: M10                                                         *
 * Company:                                                            *
 ***********************************************************************
 * Notes:                                                              *
-*     Clock source = INTOSC, OSCCON set to 16 MHz HF                  *
+*       Clock source = INTOSC, OSCCON set to 8 MHz HF                 *
 *                                                                     *
-*               PIC12F1822 pinout for this project                    *
-*               ----------                                            *
-* 3.3-5V -- Vdd |1  U   8| GND                                        *
-*    RX --> RA5 |2      7| RA0/ICSPDAT                                *
-*    TX <-- RA4 |3      6| RA1/ICSPCLK                                *
-*   Vpp --> RA3 |4      5| RA2                                        *
-*               ----------                                            *
-*                                                                     *
+*       PIC12F1822 pinout for this project                            *
+*                           ----------                                *
+*             3.3-5V -- Vdd |1  U   8| GND                            *
+*                RX --> RA5 |2      7| RA0/ICSPDAT                    *
+*                TX <-- RA4 |3      6| RA1/ICSPCLK                    *
+*               Vpp --> RA3 |4      5| RA2                            *
+*                           ----------                                *
+* compile with:                                                       *
+* $ xc8 --chip=12f1822 example.c                                      *
 **********************************************************************/
-// compile with: xc8 --chip=12f1822 example.c
 
 #include <xc.h>
 
@@ -46,20 +46,20 @@
 #pragma config LVP = OFF        // Low-Voltage Programming Enable (OFF	High-voltage on MCLR/VPP must be used for programming)
 
 // Definitions
-#define _XTAL_FREQ  16000000    // this is used by the __delay_ms(xx) and __delay_us(xx) functions
+#define _XTAL_FREQ 8000000      // this is used by the __delay_ms(xx) and __delay_us(xx) functions
 
 void main(void) {
     unsigned char portValue;    // always use a variable to hold the value you want the port to assume
 
     // set up oscillator control register
-    OSCCONbits.SPLLEN = 0;      // PLL is disabled
-    OSCCONbits.IRCF = 0x0f;     //set OSCCON IRCF bits to select OSC frequency = 16 MHz HF
-    OSCCONbits.SCS = 0x02;      //set the SCS bits to select internal oscillator block
-    // OSCCON should be 0x7Ah now.
+    OSCCONbits.SPLLEN = 0;      // PLL is disabled (POR default)
+    OSCCONbits.IRCF   = 0b1110; // set OSCCON IRCF bits to select OSC frequency = 8 MHz HF
+    OSCCONbits.SCS    = 0b10;   // select internal oscillator block regardless of FOSC
 
     // Port A access
-    ANSELA = 0x0;               // set to digital I/O (not analog)
-    TRISA = 0x0;                // set all port bits to be output
+    ANSELA = 0;                 // set to digital I/O (not analog)
+    TRISA = 0;                  // set all port bits to be output (except ra3)
+    PORTA = 0;                  // initialize the port
 
     while(1) {
         portValue = 0b00110111; // RA[0:5] except RA[3]
