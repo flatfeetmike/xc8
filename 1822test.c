@@ -1,24 +1,26 @@
 /**********************************************************************
 * File: 1822test.c                                                    *
-* Date: 02/06/2016                                                    *
-* File Version: 1                                                     *
+* Date: 08/10/2016                                                    *
+* File Version: 2                                                     *
 *                                                                     *
 * Author: M10                                                         *
 * Company:                                                            *
 ***********************************************************************
 * Notes:                                                              *
-*     Clock source = internal 500 khz osc                             *
+*   Clock source = INTOSC, OSCCON set to 8 MHz HF                     *
 *                                                                     *
-*              PIC12F1822 pinout for this project                     *
-*              ----------                                             *
-* 3.3-5V-- Vdd |1  U   8| GND                                         *
-*          GP5 |2      7| GP0 --> IR LED output                       *
-*          GP4 |3      6| GP1 <-- Button 1 input --> GND              *
-*          GP3 |4      5| GP2 <-- Button 2 input --> GND              *
-*              ----------                                             *
+*   PIC12F1822 pinout for this project                                *
 *                                                                     *
+*                           ----------                                *
+*             3.3/5V -- VDD |1  U   8| GND                            *
+*                   --> RA5 |2      7| RA0/ICSPDAT --> led1           *
+*                   <-- RA4 |3      6| RA1/ICSPCLK                    *
+*                   VPP/RA3 |4      5| RA2 <-- button1 -- gnd         *
+*                           ----------                                *
+*                                                                     *
+* Compile with:                                                       *
+*   $ xc8 --chip=12f1822 example.c                                    *
 **********************************************************************/
-// compile with: xc8 --chip=12f1822 example.c
 
 #include <xc.h>
 
@@ -45,21 +47,30 @@
 #pragma config BORV = LO        // Brown-out Reset Voltage Selection (LO	Brown-out Reset Voltage (Vbor), low trip point selected.)
 #pragma config LVP = OFF        // Low-Voltage Programming Enable (OFF	High-voltage on MCLR/VPP must be used for programming)
 
+// Definitions
+#define _XTAL_FREQ 8000000      // this is used by the __delay_ms(xx) and __delay_us(xx) functions
+
 void main(void) {
     unsigned char portValue;    // always use a variable to hold the value you want the port to assume
 
-    // Port A access
-    ANSELA = 0x0;               // set to digital I/O (not analog)
-    TRISA = 0x0;                // set all port bits to be output
+    // set up oscillator control register
+    OSCCONbits.SPLLEN = 0;      // PLL is disabled (POR default)
+    OSCCONbits.IRCF   = 0b1110; // select OSC frequency = 8 MHz HF
+    OSCCONbits.SCS    = 0b10;   // select internal oscillator block regardless of FOSC
+
+   // port A access
+    ANSELA = 0;                 // set to digital I/O (not analog)
+    TRISA = 0;                  // set all port bits to be output (except ra3)
+    PORTA = 0;                  // initialize the port
 
     while(1) {
         portValue = 0b00110111; // RA[0:5] except RA[3]
         LATA = portValue;       // write to port latch
-        _delay(50000);          // compiler built-in function - see XC8 Compiler User's Guide
+        __delay_ms(100);
         portValue = 0b00000000;
         LATA = portValue;
-        _delay(50000);          // instruction cycles - (50000/125000) sec for 500kHz clock
-    }
+        __delay_ms(900);
+        }
     return;                     // we should never reach this
     // jumps back to reset vector
 }

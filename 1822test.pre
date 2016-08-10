@@ -1,17 +1,17 @@
 
 # 1 "1822test.c"
 
-# 26 "/opt/microchip/xc8/v1.35/include/htc.h"
+# 26 "/opt/microchip/xc8/v1.36/include/htc.h"
 extern const char __xc8_OPTIM_SPEED;
 
 extern double __fpnormalize(double);
 
 
-# 13 "/opt/microchip/xc8/v1.35/include/xc8debug.h"
+# 13 "/opt/microchip/xc8/v1.36/include/xc8debug.h"
 #pragma intrinsic(__builtin_software_breakpoint)
 extern void __builtin_software_breakpoint(void);
 
-# 49 "/opt/microchip/xc8/v1.35/include/pic12f1822.h"
+# 49 "/opt/microchip/xc8/v1.36/include/pic12f1822.h"
 extern volatile unsigned char INDF0 @ 0x000;
 
 asm("INDF0 equ 00h");
@@ -2858,31 +2858,31 @@ extern volatile __bit nTO @ (((unsigned) &STATUS)*8) + 4;
 extern volatile __bit nWPUEN @ (((unsigned) &OPTION_REG)*8) + 7;
 
 
-# 27 "/opt/microchip/xc8/v1.35/include/pic.h"
+# 27 "/opt/microchip/xc8/v1.36/include/pic.h"
 #pragma intrinsic(__nop)
 extern void __nop(void);
 
-# 76
+# 77
 extern unsigned int flash_read(unsigned short addr);
 
-# 41 "/opt/microchip/xc8/v1.35/include/eeprom_routines.h"
+# 114 "/opt/microchip/xc8/v1.36/include/eeprom_routines.h"
 extern void eeprom_write(unsigned char addr, unsigned char value);
 extern unsigned char eeprom_read(unsigned char addr);
 extern void eecpymem(volatile unsigned char *to, __eeprom unsigned char *from, unsigned char size);
 extern void memcpyee(__eeprom unsigned char *to, const unsigned char *from, unsigned char size);
 
 
-# 149 "/opt/microchip/xc8/v1.35/include/pic.h"
+# 151 "/opt/microchip/xc8/v1.36/include/pic.h"
 #pragma intrinsic(_delay)
 extern __nonreentrant void _delay(unsigned long);
 
-# 184
+# 186
 extern unsigned char __resetbits;
 extern __bit __powerdown;
 extern __bit __timeout;
 
 
-# 31 "1822test.c"
+# 33 "1822test.c"
 #pragma config FOSC = INTOSC
 #pragma config WDTE = OFF
 #pragma config PWRTE = OFF
@@ -2900,20 +2900,29 @@ extern __bit __timeout;
 #pragma config BORV = LO
 #pragma config LVP = OFF
 
+
+
+
 void main(void) {
 unsigned char portValue;
 
 
-ANSELA = 0x0;
-TRISA = 0x0;
+OSCCONbits.SPLLEN = 0;
+OSCCONbits.IRCF = 0b1110;
+OSCCONbits.SCS = 0b10;
+
+
+ANSELA = 0;
+TRISA = 0;
+PORTA = 0;
 
 while(1) {
 portValue = 0b00110111;
 LATA = portValue;
-_delay(50000);
+_delay((unsigned long)((100)*(8000000/4000.0)));
 portValue = 0b00000000;
 LATA = portValue;
-_delay(50000);
+_delay((unsigned long)((900)*(8000000/4000.0)));
 }
 return;
 
