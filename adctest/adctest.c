@@ -1,20 +1,20 @@
 /**********************************************************************
-* File: txtest.c                                                      *
-* Date: 08/09/2016                                                    *
-* File Version: 3                                                     *
+* File: adctest.c                                                     *
+* Date: 08/24/2016                                                    *
+* File Version: 1                                                     *
 *                                                                     *
 * Author: M10                                                         *
 * Company:                                                            *
 ***********************************************************************
 * Notes:                                                              *
-*       Clock source = INTOSC, OSCCON set to 8 MHz HF                 *
+*       Clock source = INTOSC, OSCCON set to 16 MHz HF                 *
 *                                                                     *
 *       PIC12F1822 pinout for this project                            *
 *                           ----------                                *
 *             3.3-5V -- Vdd |1  U   8| GND                            *
 *                RX --> RA5 |2      7| RA0/ICSPDAT                    *
 *                TX <-- RA4 |3      6| RA1/ICSPCLK                    *
-*               Vpp --> RA3 |4      5| RA2                            *
+*               Vpp --> RA3 |4      5| RA2 <-- Sensor                 *
 *                           ----------                                *
 * compile with:                                                       *
 * $ xc8 --chip=12f1822 example.c                                      *
@@ -46,15 +46,17 @@
 #pragma config LVP = OFF        // Low-Voltage Programming Enable (OFF	High-voltage on MCLR/VPP must be used for programming)
 
 // Definitions
-#define _XTAL_FREQ 8000000      // this is used by the __delay_ms(xx) and __delay_us(xx) functions
+#define _XTAL_FREQ 16000000      // this is used by the __delay_ms(xx) and __delay_us(xx) functions
 
 void main(void) {
     unsigned char portValue;    // always use a variable to hold the value you want the port to assume
     int i;
 
+    unsigned int AnalogValue;       // used to store ADC result after capture
+
     // set up oscillator control register
     OSCCONbits.SPLLEN = 0;      // PLL is disabled (POR default)
-    OSCCONbits.IRCF   = 0b1110; // set OSCCON IRCF bits to select OSC frequency = 8 MHz HF
+    OSCCONbits.IRCF   = 0b1111; // set OSCCON IRCF bits to select OSC frequency = 16 MHz HF
     OSCCONbits.SCS    = 0b10;   // select internal oscillator block regardless of FOSC
 
     // port A access
@@ -70,7 +72,7 @@ void main(void) {
     RCSTA = 0b10010000;         // (*SPEN RX9  SREN *CREN  ADEN   FERR OERR RX9D)
     TXSTA = 0b00100100;         // ( CSRC TX9 *TXEN  SYNC  SENDB *BRGH TRMT TX9D)
     // set baudrate to 9600 bps
-    SPBRG = 51;                 // 9615 actual (0.16% error) 
+    SPBRG = 103;                 // 9615 actual (0.16% error) 
 
     __delay_ms(1000);
     i = 0x30;
