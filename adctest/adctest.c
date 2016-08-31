@@ -1,7 +1,7 @@
 /**********************************************************************
 * File: adctest.c                                                     *
 * Date: 08/24/2016                                                    *
-* File Version: 1                                                     *
+* File Version: 2                                                     *
 *                                                                     *
 * Author: M10                                                         *
 * Company:                                                            *
@@ -31,7 +31,7 @@
 #pragma config FOSC = INTOSC    // Oscillator Selection Bits (INTOSC	INTOSC oscillator: I/O function on CLKIN pin)
 #pragma config WDTE = OFF       // Watchdog Timer Enable (WDT disabled)
 #pragma config PWRTE = OFF      // Power-up Timer Enable (PWRT disabled)
-#pragma config MCLRE = OFF      // MCLR Pin Function Select (OFF	MCLR/VPP pin function is digital input)
+#pragma config MCLRE = ON      // MCLR Pin Function Select (OFF	MCLR/VPP pin function is digital input)
 #pragma config CP = OFF         // Flash Program Memory Code Protection (Program memory code protection is disabled)
 #pragma config CPD = OFF        // Data Memory Code Protection (OFF	Data memory code protection is disabled)
 #pragma config BOREN = OFF      // Brown-out Reset Enable (OFF	Brown-out Reset disabled)
@@ -63,6 +63,16 @@ unsigned int Read_ADC_Value(void)
 }
 
 //**********************************************************************************
+// This subroutine sends one byte to the uart port
+//**********************************************************************************
+void putch(unsigned char byte){
+    // output one octet
+    while(!TXIF)            // set when register is empty
+        continue;           // block until buffer clears
+    TXREG = byte;
+}
+
+//**********************************************************************************
 //*****************   main routine   ***********************************************
 //**********************************************************************************
 void main(void) {
@@ -75,60 +85,76 @@ void main(void) {
     OSCCONbits.IRCF   = 0b1111; // set OSCCON IRCF bits to select OSC frequency = 16 MHz HF
     OSCCONbits.SCS    = 0b10;   // select internal oscillator block regardless of FOSC
 
-    // set up port A I/O pins
-    TRISAbits.TRISA0 = 0;	// RA0 = nc
-    TRISAbits.TRISA1 = 0;	// RA1 = nc
+    // set up port i/o pins
+    TRISAbits.TRISA0 = 0;	// RA0 = nc (DAT) test led
+    TRISAbits.TRISA1 = 0;	// RA1 = nc (CLK)
     TRISAbits.TRISA2 = 1;	// RA2 = Analog Voltage In
-    TRISAbits.TRISA3 = 0;	// RA3 = nc (MCLR)
-    TRISAbits.TRISA4 = 0;	// RA4 = nc
-    TRISAbits.TRISA5 = 0;	// RA5 = nc
+    TRISAbits.TRISA3 = 1;	// RA3 = nc (MCLR)
+    TRISAbits.TRISA4 = 0;	// RA4 = nc (TX)
+    TRISAbits.TRISA5 = 0;	// RA5 = nc (RX)
 
-    DACCON0bits.DACEN = 0;  // turn DAC off
-    ANSELAbits.ANSA2 = 1;	// Select RA2 as analog input pin for potentiometer input
-    ADCON0bits.CHS = 0x02;	// select RA2 analog channel
-    ADCON0bits.ADON = 1;    // ADC is on
-    ADCON1bits.ADCS = 0x01;	// select ADC conversion clock select as Fosc/8
+    ANSELAbits.ANSA2 = 1;	// enable RA2 as an analog input for potentiometer input
+    ADCON0bits.CHS = 0b00010;	// select RA2 analog channel
+    FVRCONbits.TSEN = 1;    // enable onchip temperature indicator
+    FVRCONbits.TSRNG = 0;   // defaults to 2VT low range
+    ADCON1bits.ADCS = 0b010;// select ADC conversion clock select as Fosc/32 (2us)
     ADCON1bits.ADFM = 1;    // results are right justified
+    ADCON0bits.ADON = 1;    // ADC is on
  
-    // select alternative pin functions
+    // select alternative pin functions for uart
     RXDTSEL = 1;                // select RA5 as rx port
     TXCKSEL = 1;                // select RA4 as tx port
 
     // setup serial port (8bit, no parity)
     RCSTA = 0b10010000;         // (*SPEN RX9  SREN *CREN  ADEN   FERR OERR RX9D)
     TXSTA = 0b00100100;         // ( CSRC TX9 *TXEN  SYNC  SENDB *BRGH TRMT TX9D)
-    // set baudrate to 9600 bps
-    // baudrate = fosc / [16 (n + 1)]
-    SPBRG = 103;                 // 9615 actual (0.16% error) 
+    // set baudrate to 9600 bps, baudrate = fosc / [16 (n + 1)]
+    SPBRG = 103;                 // 9615 actual (0.16% error)
 
-    __delay_ms(500);
+    __delay_ms(100);
 
-    while(1) {
+    while(1){
+        // read RA input
+        ADCON0bits.CHS = 0b00010;	// select RA2 analog channel
+        __delay_ms(1);              // adc acquisition min 400us
         AnalogValue = Read_ADC_Value();
         
-        ch[0] = AnalogValue % 10 + '0';   // 10^0 digit
+        ch[0] = AnalogValue % 10 + '0'; // 10^0 digit
         AnalogValue = AnalogValue / 10;
-        ch[1] = AnalogValue % 10 + '0';   // 10^1 digit
+        ch[1] = AnalogValue % 10 + '0'; // 10^1 digit
         AnalogValue = AnalogValue / 10;
-        ch[2] = AnalogValue % 10 + '0';   // 10^2 digit
+        ch[2] = AnalogValue % 10 + '0'; // 10^2 digit
         AnalogValue = AnalogValue / 10;
-        ch[3] = AnalogValue % 10 + '0';   // 10^3 digit
-        
-        while(TXIF == 0);           // block until tx buffer clears
-        TXREG = ch[3];              // send the octet
-        while(TXIF == 0);
-        TXREG = ch[2];
-        while(TXIF == 0);
-        TXREG = ch[1];
-        while(TXIF == 0);
-        TXREG = ch[0];
-        while(TXIF == 0);
-        TXREG = '\r';
-        while(TXIF == 0);
-        TXREG = '\n';
+        ch[3] = AnalogValue % 10 + '0'; // 10^3 digit
+        putch(ch[3]);                   // send the octet
+        putch(ch[2]);
+        putch(ch[1]);
+        putch(ch[0]);
+        putch(',');
+        putch(' ');
 
-        __delay_ms(200);
+        // read the temperature
+        ADCON0bits.CHS = 0b11101;	// select temperature indicator channel
+        __delay_ms(1);              // adc acquisition min 400us
+        AnalogValue = Read_ADC_Value();
+        
+        ch[0] = AnalogValue % 10 + '0'; // 10^0 digit
+        AnalogValue = AnalogValue / 10;
+        ch[1] = AnalogValue % 10 + '0'; // 10^1 digit
+        AnalogValue = AnalogValue / 10;
+        ch[2] = AnalogValue % 10 + '0'; // 10^2 digit
+        AnalogValue = AnalogValue / 10;
+        ch[3] = AnalogValue % 10 + '0'; // 10^3 digit
+        putch(ch[3]);                   // send the octet
+        putch(ch[2]);
+        putch(ch[1]);
+        putch(ch[0]);
+        putch('\r');
+        putch('\n');
+
+        __delay_ms(98);
     }
+    
     return;                     // we should never reach this
     // jumps back to reset vector
 }
